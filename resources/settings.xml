@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="Settings">
+		<setting id='allowtrackrepeat' type ="bool" label="33000" default="0"/>
+		<setting id='preferdifferentartist' type ="bool" label="33001" default="0"/>
+		<setting id="numberoftrackstoadd" type="enum" values="1|3|5|10" label="33002" default="1"/>
+		<setting id="delaybeforesearching" type="enum" values="2|10|30" label="33003" default="0"/>
+		<setting id="limitlastfmresult" type="enum" values="50|100|250" label="33004" default="2"/>
+	</category>
+</settings>

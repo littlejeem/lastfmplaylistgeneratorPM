@@ -1,0 +1,64 @@
+1.1.5
+- Added: Polish translation
+
+1.1.4
+- Fixed: Removed unnecessary dependency check
+
+1.1.3
+- Fixed: Stopped after first run. 
+
+1.1.2
+- Changed: Move plugin to Music's addon section
+- Changed: Remove dependency to built-in module
+- Fixed: Fix song selection when settings.xml is missing (i.e.
+         after an install on a fresh system)
+1.1.1
+- Changed: Last.FM Api key
+
+1.1.0
+- Changed: From HTTPApi to jsonrpc
+- Frodo compatibility - might not work in Eden
+
+1.0.9
+- Fixed: String escapeing
+	Error was trown if title contained &quot;
+- Changed: removed pil module dependency (was not used)
+- Added: Check for mysql
+
+1.0.8
+- Added: duration metadata
+- Fixed: Fanart/metadata for first track
+
+1.0.7
+- Added: Setting for limiting lastfm result (default 250)
+	Used to get better similarity.
+	Use a lower number for bigger libraries.
+	For smaller libraries, a low number might not give any results.
+- Added: Title, artist, album and thumbnail metadata
+
+1.0.6
+- Fixed: Delay before searching did not cancel when starting new track
+
+1.0.5
+- Added: Settings for:
+	Allow tracks repeat
+	Prefer different artist
+	Number of tracks to add
+	Dealy before searching
+	
+1.0.4
+- Added: Add artist fanart to the listitem
+- Changed: Randomize last.fm result
+
+1.0.3
+- Added: Reset script when existing xbmc before toggeling it "Off"
+- Changed: If more than one similar track is found - pick on at random
+
+1.0.2
+- Fixed: urlencode search url
+
+1.0.1
+- Created launcher - a way to exit partymode
+
+1.0.0
+- Initial prototype

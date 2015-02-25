@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+  <!-- Script Strings -->
+	<string id="33000">Zezwalaj na odtwarzanie tego samego utworu więcej niż raz</string>
+	<string id="33001">Preferuj różnych artystów</string>
+	<string id="33002">Preferowana liczba utworów do dodania</string>
+	<string id="33003">Przerwa w sekundach między wyszukaniami</string>
+	<string id="33004">Ogranicz wyniki lastfm (mniejsza liczba dla lepszego podobieństwa)</string>
+</strings>
