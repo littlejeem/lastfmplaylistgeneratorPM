@@ -116,7 +116,7 @@ class MyPlayer( xbmc.Player ) :
 		#xbmc.executehttpapi("setresponseformat(openRecordSet;<recordset>;closeRecordSet;</recordset>;openRecord;<record>;closeRecord;</record>;openField;<field>;closeField;</field>)");
 		#print WebHTML
 		searchTracks = re.findall("<track>.+?<name>(.+?)</name>.+?<artist>(.+?)</artist>.+?<listeners>(.+?)</listeners>.+?</track>", WebHTML, re.DOTALL )		
-		foundTracks = [[]]
+		foundTracks = []
 		
 		for foundTrackName, foundArtistName, foundListeners in searchTracks :
 			trackNameRatio = Levenshtein.ratio(foundTrackName, currentlyPlayingTitle)
