@@ -5,6 +5,7 @@
 
 import os
 import random
+import Levenshtein
 import httplib, urllib, urllib2
 import sys, time
 import threading, thread
@@ -92,7 +93,7 @@ class MyPlayer( xbmc.Player ) :
 				#xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "Playlist.Add", "params": { "item": {"file": "%s"}, "playlistid": 0 }, "id": 1}' % trackPath)
 				self.addedTracks += [xbmc.Player().getMusicInfoTag().getURL()]
 			#print "Start looking for similar tracks"
-			self.fetch_similarTracks(currentlyPlayingTitle,currentlyPlayingArtist)
+			self.main_similarTracks(currentlyPlayingTitle,currentlyPlayingArtist)
 
 	def onPlayBackStarted(self):
 		print "[LFM PLG(PM)] onPlayBackStarted waiting:  " + str(self.delaybeforesearching) +" seconds"
@@ -101,7 +102,33 @@ class MyPlayer( xbmc.Player ) :
 			
 		self.timer = threading.Timer(self.delaybeforesearching,self.startPlayBack)
 		self.timer.start()
+		
+	def fetch_searchTrack(self, currentlyPlayingTitle, currentlyPlayingArtist ):
+		apiMethod = "&method=track.search&limit=" + str(self.limitlastfmresult)
 
+		# The url in which to use
+		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.quote_plus(currentlyPlayingArtist) + "&track=" + urllib.quote_plus(currentlyPlayingTitle)
+		#print Base_URL
+		WebSock = urllib.urlopen(Base_URL)  # Opens a 'Socket' to URL
+		WebHTML = WebSock.read()            # Reads Contents of URL and saves to Variable
+		WebSock.close()                     # Closes connection to url
+		
+		#xbmc.executehttpapi("setresponseformat(openRecordSet;<recordset>;closeRecordSet;</recordset>;openRecord;<record>;closeRecord;</record>;openField;<field>;closeField;</field>)");
+		#print WebHTML
+		searchTracks = re.findall("<track>.+?<name>(.+?)</name>.+?<artist>(.+?)</artist>.+?<listeners>(.+?)</listeners>.+?</track>", WebHTML, re.DOTALL )		
+		foundTracks = [[]]
+		
+		for foundTrackName, foundArtistName, foundListeners in searchTracks :
+			trackNameRatio = Levenshtein.ratio(foundTrackName, currentlyPlayingTitle)
+			artistRatio = Levenshtein.ratio(foundArtistName, currentlyPlayingArtist)
+			fullRatio = Levenshtein.ratio(foundArtistName + " " + foundTrackName, currentlyPlayingArtist + " " + currentlyPlayingTitle)
+			
+			if(fullRatio > 0.6 and (artistRatio > 0.6 or trackNameRatio > 0.6)):
+				foundTracks.append([foundTrackName, foundArtistName])
+				log("[LFM PLG(PM)] Found Similar Track Name : " + str(foundTrackName) + " by: " + str(foundArtistName))
+		
+		return searchTracks
+	
 	def fetch_similarTracks( self, currentlyPlayingTitle, currentlyPlayingArtist ):
 		apiMethod = "&method=track.getsimilar&limit=" + str(self.limitlastfmresult)
 
@@ -115,10 +142,22 @@ class MyPlayer( xbmc.Player ) :
 		#xbmc.executehttpapi("setresponseformat(openRecordSet;<recordset>;closeRecordSet;</recordset>;openRecord;<record>;closeRecord;</record>;openField;<field>;closeField;</field>)");
 		#print WebHTML
 		similarTracks = re.findall("<track>.+?<name>(.+?)</name>.+?<match>(.+?)</match>.+?<artist>.+?<name>(.+?)</name>.+?</artist>.+?</track>", WebHTML, re.DOTALL )
+		return similarTracks
+		
+	def main_similarTracks( self, currentlyPlayingTitle, currentlyPlayingArtist ):
+		similarTracks = self.fetch_similarTracks(currentlyPlayingTitle, currentlyPlayingArtist)
 		random.shuffle(similarTracks)
 		foundArtists = []
 		countTracks = len(similarTracks)
 		print "[LFM PLG(PM)] Count: " + str(countTracks)
+		if(countTracks == 0):
+			print "[LFM PLG(PM)] Find Similar Track Name"
+			listSearchResult= self.fetch_searchTrack(currentlyPlayingTitle, currentlyPlayingArtist)
+			for searchTrackName, searchArtistName in listSearchResult:
+				similarTracks = similarTracks + self.fetch_similarTracks(searchTrackName, searchArtistName)
+			countTracks = len(similarTracks)
+			print "[LFM PLG(PM)] Count: " + str(countTracks)
+			
 		for similarTrackName, matchValue, similarArtistName in similarTracks:
 			#print "Looking for: " + similarTrackName + " - " + similarArtistName + " - " + matchValue
 			similarTrackName = similarTrackName.replace("+"," ").replace("("," ").replace(")"," ").replace("&quot","''").replace("&amp;","and")
