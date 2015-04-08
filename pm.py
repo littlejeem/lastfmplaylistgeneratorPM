@@ -5,7 +5,7 @@
 
 import os
 import random
-import Levenshtein
+import difflib
 import httplib, urllib, urllib2
 import sys, time
 import threading, thread
@@ -72,8 +72,8 @@ class MyPlayer( xbmc.Player ) :
 		print "[LFM PLG(PM)] onPlayBackStarted started"
 		if xbmc.Player().isPlayingAudio() == True:
 			currentlyPlayingTitle = xbmc.Player().getMusicInfoTag().getTitle()
-			print "[LFM PLG(PM)] " + currentlyPlayingTitle + " started playing"
 			currentlyPlayingArtist = xbmc.Player().getMusicInfoTag().getArtist()
+			print "[LFM PLG(PM)] " + currentlyPlayingArtist + " - " + currentlyPlayingTitle + " started playing"
 			self.countFoundTracks = 0
 			if (self.firstRun == 1):
 				self.firstRun = 0
@@ -119,15 +119,15 @@ class MyPlayer( xbmc.Player ) :
 		foundTracks = []
 		
 		for foundTrackName, foundArtistName, foundListeners in searchTracks :
-			trackNameRatio = Levenshtein.ratio(foundTrackName, currentlyPlayingTitle)
-			artistRatio = Levenshtein.ratio(foundArtistName, currentlyPlayingArtist)
-			fullRatio = Levenshtein.ratio(foundArtistName + " " + foundTrackName, currentlyPlayingArtist + " " + currentlyPlayingTitle)
-			
-			if(fullRatio > 0.6 and (artistRatio > 0.6 or trackNameRatio > 0.6)):
+			trackNameRatio = difflib.SequenceMatcher(None, foundTrackName, currentlyPlayingTitle).ratio()
+			artistRatio = difflib.SequenceMatcher(None, foundArtistName, currentlyPlayingArtist).ratio()
+			fullRatio = difflib.SequenceMatcher(None, foundArtistName + " " + foundTrackName, currentlyPlayingArtist + " " + currentlyPlayingTitle).ratio()
+
+			if(fullRatio > 0.5 and (artistRatio > 0.3 or trackNameRatio > 0.3)):
 				foundTracks.append([foundTrackName, foundArtistName])
-				log("[LFM PLG(PM)] Found Similar Track Name : " + str(foundTrackName) + " by: " + str(foundArtistName))
+				print "[LFM PLG(PM)] Found Similar Track Name : " + foundTrackName + " by: " + foundArtistName
 		
-		return searchTracks
+		return foundTracks
 	
 	def fetch_similarTracks( self, currentlyPlayingTitle, currentlyPlayingArtist ):
 		apiMethod = "&method=track.getsimilar&limit=" + str(self.limitlastfmresult)
@@ -141,25 +141,30 @@ class MyPlayer( xbmc.Player ) :
 
 		#xbmc.executehttpapi("setresponseformat(openRecordSet;<recordset>;closeRecordSet;</recordset>;openRecord;<record>;closeRecord;</record>;openField;<field>;closeField;</field>)");
 		#print WebHTML
-		similarTracks = re.findall("<track>.+?<name>(.+?)</name>.+?<match>(.+?)</match>.+?<artist>.+?<name>(.+?)</name>.+?</artist>.+?</track>", WebHTML, re.DOTALL )
+		similarTracks = re.findall("<track>.+?<name>(.+?)</name>.+?<playcount>(.+?)</playcount>.+?<match>(.+?)</match>.+?<artist>.+?<name>(.+?)</name>.+?</artist>.+?</track>", WebHTML, re.DOTALL )
 		return similarTracks
 		
 	def main_similarTracks( self, currentlyPlayingTitle, currentlyPlayingArtist ):
 		similarTracks = self.fetch_similarTracks(currentlyPlayingTitle, currentlyPlayingArtist)
-		random.shuffle(similarTracks)
 		foundArtists = []
 		countTracks = len(similarTracks)
 		print "[LFM PLG(PM)] Count: " + str(countTracks)
-		if(countTracks == 0):
+		if(countTracks < 10):
 			print "[LFM PLG(PM)] Find Similar Track Name"
-			listSearchResult= self.fetch_searchTrack(currentlyPlayingTitle, currentlyPlayingArtist)
+			listSearchResult = []
+			listSearchResult = self.fetch_searchTrack(currentlyPlayingTitle, currentlyPlayingArtist)
+			countFoundTracks = len(listSearchResult)
+			print "[LFM PLG(PM)] Find Similar Track Name - Count: " + str(countFoundTracks)
 			for searchTrackName, searchArtistName in listSearchResult:
-				similarTracks = similarTracks + self.fetch_similarTracks(searchTrackName, searchArtistName)
+				similarTracks += self.fetch_similarTracks(searchTrackName, searchArtistName)
 			countTracks = len(similarTracks)
-			print "[LFM PLG(PM)] Count: " + str(countTracks)
-			
-		for similarTrackName, matchValue, similarArtistName in similarTracks:
-			#print "Looking for: " + similarTrackName + " - " + similarArtistName + " - " + matchValue
+			print "[LFM PLG(PM)] Find Similar Track - Count: " + str(countTracks)		
+
+		similarTracks.sort(key=lambda tup: int(tup[1]), reverse=True)
+		# random.shuffle(similarTracks)
+		selectedArtist = []
+		for similarTrackName, playCount, matchValue, similarArtistName in similarTracks:
+			log("Looking for: " + similarTrackName + " - " + similarArtistName + " - " + matchValue + "/" + playCount)
 			similarTrackName = similarTrackName.replace("+"," ").replace("("," ").replace(")"," ").replace("&quot","''").replace("&amp;","and")
 			similarArtistName = similarArtistName.replace("+"," ").replace("("," ").replace(")"," ").replace("&quot","''").replace("&amp;","and")
 			json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"contains","value":"%s"},{"field":"artist","operator":"contains","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
@@ -179,17 +184,19 @@ class MyPlayer( xbmc.Player ) :
 					thumb = item["thumbnail"]
 					duration = int(item["duration"])
 					fanart = item["fanart"]
-					log("[LFM PLG(PM)] Found: " + str(trackTitle) + " by: " + str(artist))
-					if ((self.allowtrackrepeat == "true" or self.allowtrackrepeat == 1) or (trackPath not in self.addedTracks)):
-						if ((self.preferdifferentartist != "true" and self.preferdifferentartist != 1) or (eval(matchValue) < 0.2 and similarArtistName not in foundArtists)):
-							listitem = self.getListItem(trackTitle,artist,album,thumb,fanart,duration)
-							xbmc.PlayList(0).add(url=trackPath, listitem=listitem)
-							#xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "Playlist.Add", "params": { "item": {"file": "%s"}, "playlistid": 0 }, "id": 1}' % trackPath)
-							self.addedTracks += [trackPath]
-							xbmc.executebuiltin("Container.Refresh")
-							self.countFoundTracks += 1
-							if (similarArtistName not in foundArtists):
-								foundArtists += [similarArtistName]
+					if(artist.upper() not in selectedArtist):
+						selectedArtist.append(artist.upper())
+						print "[LFM PLG(PM)] Found: " + str(trackTitle) + " by: " + str(artist)
+						if ((self.allowtrackrepeat == "true" or self.allowtrackrepeat == 1) or (trackPath not in self.addedTracks)):
+							if ((self.preferdifferentartist != "true" and self.preferdifferentartist != 1) or (eval(matchValue) < 0.2 and similarArtistName not in foundArtists)):
+								listitem = self.getListItem(trackTitle,artist,album,thumb,fanart,duration)
+								xbmc.PlayList(0).add(url=trackPath, listitem=listitem)
+								#xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "Playlist.Add", "params": { "item": {"file": "%s"}, "playlistid": 0 }, "id": 1}' % trackPath)
+								self.addedTracks += [trackPath]
+								xbmc.executebuiltin("Container.Refresh")
+								self.countFoundTracks += 1
+								if (similarArtistName not in foundArtists):
+									foundArtists += [similarArtistName]
 
 				if (self.countFoundTracks >= self.numberoftrackstoadd):
 					break
