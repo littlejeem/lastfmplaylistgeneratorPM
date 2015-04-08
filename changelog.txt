@@ -1,3 +1,8 @@
+1.2.0
+- Changed : Optimise song selection
+- Added : 2 properties (minimalmatch, minimalplaycount)
+- Added : French translation
+
 1.1.5
 - Added: Polish translation
 

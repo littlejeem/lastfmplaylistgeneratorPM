@@ -6,4 +6,6 @@
 	<string id="33002">Preferowana liczba utworów do dodania</string>
 	<string id="33003">Przerwa w sekundach między wyszukaniami</string>
 	<string id="33004">Ogranicz wyniki lastfm (mniejsza liczba dla lepszego podobieństwa)</string>
+	<string id="33005">Minimum number of listening on last.fm (upper number for better songs)</string>
+	<string id="33006">Minimum Percentage similarity (upper number for better similarity)</string>	
 </strings>

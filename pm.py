@@ -39,6 +39,8 @@ class MyPlayer( xbmc.Player ) :
 	numberoftrackstoadd = ( 1, 3, 5, 10, )[ int( __settings__.getSetting( "numberoftrackstoadd" ) ) ]
 	delaybeforesearching= ( 2, 10, 30, )[ int( __settings__.getSetting( "delaybeforesearching" ) ) ]
 	limitlastfmresult= ( 50, 100, 250, )[ int( __settings__.getSetting( "limitlastfmresult" ) ) ]
+	minimalplaycount= ( 50, 100, 250, 500, )[ int( __settings__.getSetting( "minimalplaycount" ) ) ]
+	minimalmatching= ( 1, 2, 5, 10, 20, )[ int( __settings__.getSetting( "minimalmatching" ) ) ]
 	timer = None
 
 
@@ -119,11 +121,11 @@ class MyPlayer( xbmc.Player ) :
 		foundTracks = []
 		
 		for foundTrackName, foundArtistName, foundListeners in searchTracks :
-			trackNameRatio = difflib.SequenceMatcher(None, foundTrackName, currentlyPlayingTitle).ratio()
-			artistRatio = difflib.SequenceMatcher(None, foundArtistName, currentlyPlayingArtist).ratio()
-			fullRatio = difflib.SequenceMatcher(None, foundArtistName + " " + foundTrackName, currentlyPlayingArtist + " " + currentlyPlayingTitle).ratio()
+			foundFullName = foundArtistName + " " + foundTrackName
+			currentFullName = currentlyPlayingArtist + " " + currentlyPlayingTitle
+			fullRatio = difflib.SequenceMatcher(None, foundFullName, currentFullName).ratio()
 
-			if(fullRatio > 0.5 and (artistRatio > 0.3 or trackNameRatio > 0.3)):
+			if(fullRatio > 0.5):
 				foundTracks.append([foundTrackName, foundArtistName])
 				print "[LFM PLG(PM)] Found Similar Track Name : " + foundTrackName + " by: " + foundArtistName
 		
@@ -142,6 +144,8 @@ class MyPlayer( xbmc.Player ) :
 		#xbmc.executehttpapi("setresponseformat(openRecordSet;<recordset>;closeRecordSet;</recordset>;openRecord;<record>;closeRecord;</record>;openField;<field>;closeField;</field>)");
 		#print WebHTML
 		similarTracks = re.findall("<track>.+?<name>(.+?)</name>.+?<playcount>(.+?)</playcount>.+?<match>(.+?)</match>.+?<artist>.+?<name>(.+?)</name>.+?</artist>.+?</track>", WebHTML, re.DOTALL )
+		similarTracks = [x for x in similarTracks if int(x[1]) > self.minimalplaycount]
+		similarTracks = [x for x in similarTracks if float(x[2]) > (float(self.minimalmatching)/100.0)]
 		return similarTracks
 		
 	def main_similarTracks( self, currentlyPlayingTitle, currentlyPlayingArtist ):
@@ -160,8 +164,8 @@ class MyPlayer( xbmc.Player ) :
 			countTracks = len(similarTracks)
 			print "[LFM PLG(PM)] Find Similar Track - Count: " + str(countTracks)		
 
-		similarTracks.sort(key=lambda tup: int(tup[1]), reverse=True)
-		# random.shuffle(similarTracks)
+		# similarTracks.sort(key=lambda tup: int(tup[1]), reverse=True)
+		random.shuffle(similarTracks)
 		selectedArtist = []
 		for similarTrackName, playCount, matchValue, similarArtistName in similarTracks:
 			log("Looking for: " + similarTrackName + " - " + similarArtistName + " - " + matchValue + "/" + playCount)
@@ -186,7 +190,7 @@ class MyPlayer( xbmc.Player ) :
 					fanart = item["fanart"]
 					if(artist.upper() not in selectedArtist):
 						selectedArtist.append(artist.upper())
-						print "[LFM PLG(PM)] Found: " + str(trackTitle) + " by: " + str(artist)
+						log("[LFM PLG(PM)] Found: " + str(trackTitle) + " by: " + str(artist))
 						if ((self.allowtrackrepeat == "true" or self.allowtrackrepeat == 1) or (trackPath not in self.addedTracks)):
 							if ((self.preferdifferentartist != "true" and self.preferdifferentartist != 1) or (eval(matchValue) < 0.2 and similarArtistName not in foundArtists)):
 								listitem = self.getListItem(trackTitle,artist,album,thumb,fanart,duration)

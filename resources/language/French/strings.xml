@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+  <!-- Script Strings -->
+	<string id="33000">Autoriser un même titre à être jouer plusieurs fois</string>
+	<string id="33001">Préférer différents artistes</string>
+	<string id="33002">Nombre de titre à ajouter</string>
+	<string id="33003">Délai en seconde avant de lancer la recherche</string>
+	<string id="33004">Nombre de résultats par recherche sur Last.fm</string>
+	<string id="33005">Nombre minimum d'écoute sur last.fm</string>
+	<string id="33006">Pourcentage minimal de similitude sur last.fm</string>
+</strings>
