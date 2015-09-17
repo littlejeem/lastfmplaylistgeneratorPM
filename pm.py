@@ -112,12 +112,13 @@ class MyPlayer( xbmc.Player ) :
 		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.quote_plus(currentlyPlayingArtist) + "&track=" + urllib.quote_plus(currentlyPlayingTitle)
 		#print Base_URL
 		WebSock = urllib.urlopen(Base_URL)  # Opens a 'Socket' to URL
+		# print "[LFM PLG(PM)] Request : " + Base_URL
 		WebHTML = WebSock.read()            # Reads Contents of URL and saves to Variable
 		WebSock.close()                     # Closes connection to url
 		
 		#xbmc.executehttpapi("setresponseformat(openRecordSet;<recordset>;closeRecordSet;</recordset>;openRecord;<record>;closeRecord;</record>;openField;<field>;closeField;</field>)");
 		#print WebHTML
-		searchTracks = re.findall("<track>.+?<name>(.+?)</name>.+?<artist>(.+?)</artist>.+?<listeners>(.+?)</listeners>.+?</track>", WebHTML, re.DOTALL )		
+		searchTracks = re.findall("<track>.*?<name>(.+?)</name>.*?<artist>(.+?)</artist>.*?<listeners>(.+?)</listeners>.*?</track>", WebHTML, re.DOTALL )		
 		foundTracks = []
 		
 		for foundTrackName, foundArtistName, foundListeners in searchTracks :
@@ -138,14 +139,15 @@ class MyPlayer( xbmc.Player ) :
 		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.quote_plus(currentlyPlayingArtist) + "&track=" + urllib.quote_plus(currentlyPlayingTitle)
 		#print Base_URL
 		WebSock = urllib.urlopen(Base_URL)  # Opens a 'Socket' to URL
+		# print "[LFM PLG(PM)] Request : " + Base_URL		
 		WebHTML = WebSock.read()            # Reads Contents of URL and saves to Variable
 		WebSock.close()                     # Closes connection to url
 
 		#xbmc.executehttpapi("setresponseformat(openRecordSet;<recordset>;closeRecordSet;</recordset>;openRecord;<record>;closeRecord;</record>;openField;<field>;closeField;</field>)");
 		#print WebHTML
-		similarTracks = re.findall("<track>.+?<name>(.+?)</name>.+?<playcount>(.+?)</playcount>.+?<match>(.+?)</match>.+?<artist>.+?<name>(.+?)</name>.+?</artist>.+?</track>", WebHTML, re.DOTALL )
-		similarTracks = [x for x in similarTracks if int(x[1]) > self.minimalplaycount]
-		similarTracks = [x for x in similarTracks if float(x[2]) > (float(self.minimalmatching)/100.0)]
+		similarTracks = re.findall("<track>.*?<name>(.+?)</name>.*?<playcount>(.+?)</playcount>.*?<match>(.+?)</match>.*?<artist>.*?<name>(.+?)</name>.*?</artist>.*?</track>", WebHTML, re.DOTALL )
+		similarTracks = [x for x in similarTracks if int(x[1]) > self.minimalplaycount]	
+		similarTracks = [x for x in similarTracks if float(x[2]) > (float(self.minimalmatching)/100.0)]			
 		return similarTracks
 		
 	def main_similarTracks( self, currentlyPlayingTitle, currentlyPlayingArtist ):
