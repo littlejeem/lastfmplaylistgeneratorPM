@@ -10,6 +10,7 @@ import httplib, urllib, urllib2
 import sys, time
 import threading, thread
 import xbmc, xbmcgui, xbmcaddon
+import unicodedata
 from urllib import quote_plus, unquote_plus
 import re
 from os.path import exists
@@ -93,7 +94,7 @@ class MyPlayer( xbmc.Player ) :
 				xbmc.PlayList(0).add(url= xbmc.Player().getMusicInfoTag().getURL(), listitem = listitem)
 				#trackPath = xbmc.Player().getMusicInfoTag().getURL()
 				#xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "Playlist.Add", "params": { "item": {"file": "%s"}, "playlistid": 0 }, "id": 1}' % trackPath)
-				self.addedTracks += [xbmc.Player().getMusicInfoTag().getURL()]
+				self.addedTracks += [self.unicode_normalize_string(xbmc.Player().getMusicInfoTag().getURL())]
 			#print "Start looking for similar tracks"
 			self.main_similarTracks(currentlyPlayingTitle,currentlyPlayingArtist)
 
@@ -104,12 +105,15 @@ class MyPlayer( xbmc.Player ) :
 			
 		self.timer = threading.Timer(self.delaybeforesearching,self.startPlayBack)
 		self.timer.start()
-		
+	
+	def unicode_normalize_string(self, text):
+		return unicodedata.normalize('NFD', unicode(text, 'utf-8')).encode('ascii', 'ignore').upper().replace("-","")	
+	
 	def fetch_searchTrack(self, currentlyPlayingTitle, currentlyPlayingArtist ):
 		apiMethod = "&method=track.search&limit=" + str(self.limitlastfmresult)
 
 		# The url in which to use
-		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.quote_plus(currentlyPlayingArtist) + "&track=" + urllib.quote_plus(currentlyPlayingTitle)
+		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.quote_plus(self.unicode_normalize_string(currentlyPlayingArtist)) + "&track=" + urllib.quote_plus(self.unicode_normalize_string(currentlyPlayingTitle))
 		#print Base_URL
 		WebSock = urllib.urlopen(Base_URL)  # Opens a 'Socket' to URL
 		# print "[LFM PLG(PM)] Request : " + Base_URL
@@ -122,13 +126,14 @@ class MyPlayer( xbmc.Player ) :
 		foundTracks = []
 		
 		for foundTrackName, foundArtistName, foundListeners in searchTracks :
-			foundFullName = foundArtistName + " " + foundTrackName
-			currentFullName = currentlyPlayingArtist + " " + currentlyPlayingTitle
-			fullRatio = difflib.SequenceMatcher(None, foundFullName, currentFullName).ratio()
+			if(foundListeners > self.minimalplaycount):
+				foundFullName = foundArtistName + " " + foundTrackName
+				currentFullName = currentlyPlayingArtist + " " + currentlyPlayingTitle
+				fullRatio = difflib.SequenceMatcher(None, foundFullName, currentFullName).ratio()
 
-			if(fullRatio > 0.5):
-				foundTracks.append([foundTrackName, foundArtistName])
-				print "[LFM PLG(PM)] Found Similar Track Name : " + foundTrackName + " by: " + foundArtistName
+				if(fullRatio > 0.5):
+					foundTracks.append([foundTrackName, foundArtistName])
+					print "[LFM PLG(PM)] Found Similar Track Name : " + foundTrackName + " by: " + foundArtistName
 		
 		return foundTracks
 	
@@ -136,7 +141,7 @@ class MyPlayer( xbmc.Player ) :
 		apiMethod = "&method=track.getsimilar&limit=" + str(self.limitlastfmresult)
 
 		# The url in which to use
-		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.quote_plus(currentlyPlayingArtist) + "&track=" + urllib.quote_plus(currentlyPlayingTitle)
+		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.quote_plus(self.unicode_normalize_string(currentlyPlayingArtist)) + "&track=" + urllib.quote_plus(self.unicode_normalize_string(currentlyPlayingTitle))
 		#print Base_URL
 		WebSock = urllib.urlopen(Base_URL)  # Opens a 'Socket' to URL
 		# print "[LFM PLG(PM)] Request : " + Base_URL		
@@ -170,12 +175,17 @@ class MyPlayer( xbmc.Player ) :
 		random.shuffle(similarTracks)
 		selectedArtist = []
 		for similarTrackName, playCount, matchValue, similarArtistName in similarTracks:
-			log("Looking for: " + similarTrackName + " - " + similarArtistName + " - " + matchValue + "/" + playCount)
 			similarTrackName = similarTrackName.replace("+"," ").replace("("," ").replace(")"," ").replace("&quot","''").replace("&amp;","and")
 			similarArtistName = similarArtistName.replace("+"," ").replace("("," ").replace(")"," ").replace("&quot","''").replace("&amp;","and")
-			json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"contains","value":"%s"},{"field":"artist","operator":"contains","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
+			log("Looking for: " + similarTrackName + " - " + similarArtistName + " - " + matchValue + "/" + playCount)			
+			json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"is","value":"%s"},{"field":"artist","operator":"is","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
 			json_query = unicode(json_query, 'utf-8', errors='ignore')
 			json_response = simplejson.loads(json_query)
+			if not(json_response.has_key('result')) or json_response['result'] == None or not(json_response['result'].has_key('songs')):
+				json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"contains","value":"%s"},{"field":"artist","operator":"contains","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
+				json_query = unicode(json_query, 'utf-8', errors='ignore')
+				json_response = simplejson.loads(json_query)
+				
 			# separate the records
 			if json_response.has_key('result') and json_response['result'] != None and json_response['result'].has_key('songs'):
 				count = 0
@@ -190,19 +200,19 @@ class MyPlayer( xbmc.Player ) :
 					thumb = item["thumbnail"]
 					duration = int(item["duration"])
 					fanart = item["fanart"]
-					if(artist.upper() not in selectedArtist):
-						selectedArtist.append(artist.upper())
-						log("[LFM PLG(PM)] Found: " + str(trackTitle) + " by: " + str(artist))
-						if ((self.allowtrackrepeat == "true" or self.allowtrackrepeat == 1) or (trackPath not in self.addedTracks)):
-							if ((self.preferdifferentartist != "true" and self.preferdifferentartist != 1) or (eval(matchValue) < 0.2 and similarArtistName not in foundArtists)):
+					if(artist not in selectedArtist):
+						selectedArtist.append(artist)
+						print "[LFM PLG(PM)] Found: " + trackTitle.encode('utf-8') + " by: " + artist.encode('utf-8')
+						if ((self.allowtrackrepeat == "true" or self.allowtrackrepeat == 1) or (self.unicode_normalize_string(trackPath.encode('utf-8')) not in self.addedTracks)):
+							if ((self.preferdifferentartist != "true" and self.preferdifferentartist != 1) or (self.unicode_normalize_string(similarArtistName) not in foundArtists)):
 								listitem = self.getListItem(trackTitle,artist,album,thumb,fanart,duration)
 								xbmc.PlayList(0).add(url=trackPath, listitem=listitem)
-								#xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "Playlist.Add", "params": { "item": {"file": "%s"}, "playlistid": 0 }, "id": 1}' % trackPath)
-								self.addedTracks += [trackPath]
+								print "[LFM PLG(PM)] Add track : " + trackTitle.encode('utf-8') + " by: " + artist.encode('utf-8')
+								self.addedTracks += [self.unicode_normalize_string(trackPath.encode('utf-8'))]
 								xbmc.executebuiltin("Container.Refresh")
 								self.countFoundTracks += 1
-								if (similarArtistName not in foundArtists):
-									foundArtists += [similarArtistName]
+								if (self.unicode_normalize_string(similarArtistName) not in foundArtists):
+									foundArtists += [self.unicode_normalize_string(similarArtistName)]
 
 				if (self.countFoundTracks >= self.numberoftrackstoadd):
 					break
