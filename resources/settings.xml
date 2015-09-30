@@ -8,5 +8,6 @@
 		<setting id="limitlastfmresult" type="enum" values="50|100|250" label="33004" default="2"/>
 		<setting id="minimalplaycount" type="enum" values="50|100|250|500" label="33005" default="1"/>
 		<setting id="minimalmatching" type="enum" values="1|2|5|10|20" label="33006" default="1"/>
+		<setting id="mode" type="enum" values="Similar tracks|Top tracks of similar artist|Custom" label="33007" default="2"/>
 	</category>
 </settings>
