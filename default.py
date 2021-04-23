@@ -16,5 +16,5 @@ if os.path.exists(process):
     if xbmcgui.Dialog().yesno("Last.FM playlist generator (partymode)", "Would you like to exit partymode?" ):
         os.remove(process)        
 else:
-    file( process , "w" ).write( "" )
-    xbmc.executebuiltin('XBMC.RunScript(%s)' % os.path.join( __cwd__, "pm.py" ))
+    open( process , "w" ).write( "" )
+    xbmc.executescript("%s" % os.path.join( __cwd__, "pm.py" ))
