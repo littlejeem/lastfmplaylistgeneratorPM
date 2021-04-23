@@ -87,7 +87,8 @@ class MyPlayer( xbmc.Player ) :
 				thumb = "special://profile/Thumbnails/Music/%s/%s" % ( cache_name[:1], cache_name, )
 				duration = xbmc.Player().getMusicInfoTag().getDuration()
 				fanart = ""
-				listitem = self.getListItem(currentlyPlayingTitle,currentlyPlayingArtist,album,thumb,fanart,duration)
+				year = xbmc.Player().getMusicInfoTag().getReleaseDate()
+				listitem = self.getListItem(currentlyPlayingTitle,currentlyPlayingArtist,album,thumb,fanart,duration,year)
 				xbmc.PlayList(0).clear()
 				xbmc.executebuiltin('XBMC.ActivateWindow(10500)')
 				xbmc.PlayList(0).add(url= xbmc.Player().getMusicInfoTag().getURL(), listitem = listitem)
@@ -211,10 +212,10 @@ class MyPlayer( xbmc.Player ) :
 			similarTrackName = similarTrackName.replace("+"," ").replace("("," ").replace(")"," ").replace("&quot","''").replace("&amp;","and")
 			similarArtistName = similarArtistName.replace("+"," ").replace("("," ").replace(")"," ").replace("&quot","''").replace("&amp;","and")
 			log("Looking for: " + similarTrackName + " - " + similarArtistName + " - " + matchValue + "/" + playCount)			
-			json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"is","value":"%s"},{"field":"artist","operator":"is","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
+			json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart", "year"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"is","value":"%s"},{"field":"artist","operator":"is","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
 			json_response = simplejson.loads(json_query)
 			if 'result' not in json_response or json_response['result'] == None or 'songs' not in json_response['result']:
-				json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"contains","value":"%s"},{"field":"artist","operator":"contains","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
+				json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart", "year"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"contains","value":"%s"},{"field":"artist","operator":"contains","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
 				json_response = simplejson.loads(json_query)
 				
 			# separate the records
@@ -231,12 +232,13 @@ class MyPlayer( xbmc.Player ) :
 					thumb = item["thumbnail"]
 					duration = int(item["duration"])
 					fanart = item["fanart"]
+					year = item["year"]
 					if(artist not in selectedArtist):
 						selectedArtist.append(artist)
 						print("[LFM PLG(PM)] Found: " + trackTitle + " by: " + artist)
 						if ((self.allowtrackrepeat == "true" or self.allowtrackrepeat == 1) or (self.unicode_normalize_string(trackPath) not in self.addedTracks)):
 							if ((self.preferdifferentartist != "true" and self.preferdifferentartist != 1) or (self.unicode_normalize_string(similarArtistName) not in foundArtists)):
-								listitem = self.getListItem(trackTitle,artist,album,thumb,fanart,duration)
+								listitem = self.getListItem(trackTitle,artist,album,thumb,fanart,duration,year)
 								xbmc.PlayList(0).add(url=trackPath, listitem=listitem)
 								print("[LFM PLG(PM)] Add track : " + trackTitle + " by: " + artist)
 								self.addedTracks += [self.unicode_normalize_string(trackPath)]
@@ -257,13 +259,13 @@ class MyPlayer( xbmc.Player ) :
 			
 		xbmc.executebuiltin('SetCurrentPlaylist(0)')
 		
-	def getListItem(self, trackTitle, artist, album, thumb, fanart,duration):
+	def getListItem(self, trackTitle, artist, album, thumb, fanart, duration, year):
 		listitem = xbmcgui.ListItem(trackTitle)
 		if (fanart == ""):
 			cache_name = xbmc.getCacheThumbName( str(artist) )
 			fanart = "special://profile/Thumbnails/Music/%s/%s" % ( "Fanart", cache_name, )
 		listitem.setProperty('fanart_image',fanart)
-		listitem.setInfo('music', { 'title': trackTitle, 'artist': artist, 'album': album, 'duration': duration })
+		listitem.setInfo('music', { 'title': trackTitle, 'artist': artist, 'album': album, 'duration': duration, 'year': year })
 		#log("[LFM PLG(PM)] Fanart:%s" % fanart)
 		return listitem
 
