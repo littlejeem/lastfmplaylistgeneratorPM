@@ -14,6 +14,7 @@ import unicodedata
 import re
 from os.path import exists
 from os import remove
+from urllib.error import HTTPError, URLError
 if sys.version_info < (2, 7):
     import simplejson
 else:
@@ -42,12 +43,15 @@ class MyPlayer( xbmc.Player ) :
 	minimalplaycount= ( 50, 100, 250, 500, )[ int( __settings__.getSetting( "minimalplaycount" ) ) ]
 	minimalmatching= ( 1, 2, 5, 10, 20, )[ int( __settings__.getSetting( "minimalmatching" ) ) ]
 	mode= ( "Similar tracks", "Top tracks of similar artist", "Custom", )[ int(__settings__.getSetting( "mode" ) ) ]
+	apiKey = __settings__.getSetting( "lastfmapikey" )
 	timer = None
-
-
+	
 	#apiPath = "http://ws.audioscrobbler.com/2.0/?api_key=71e468a84c1f40d4991ddccc46e40f1b"
 	#apiPath = "http://ws.audioscrobbler.com/2.0/?api_key=3ae834eee073c460a250ee08979184ec"
 	apiPath = "http://ws.audioscrobbler.com/2.0/?api_key=2c0caa5a9d0f36fe8385f3d03986258b"
+	if (len(apiKey)):
+		apiPath = "http://ws.audioscrobbler.com/2.0/?api_key=" + apiKey
+	#print("[LFM PLG(PM)] apiPath: %s" % apiPath)
 	
 	def __init__ ( self ):
 		if not os.path.exists(xbmc.translatePath("special://userdata/advancedsettings.xml")):
@@ -112,9 +116,18 @@ class MyPlayer( xbmc.Player ) :
 		# The url in which to use
 		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.parse.quote_plus(self.unicode_normalize_string(currentlyPlayingArtist)) + "&track=" + urllib.parse.quote_plus(self.unicode_normalize_string(currentlyPlayingTitle))
 		print("[LFM PLG(PM)] Request : " + Base_URL)
-		WebSock = urllib.request.urlopen(Base_URL)          # Opens a 'Socket' to URL
-		WebHTML = WebSock.read().decode('utf-8', 'ignore')  # Reads Contents of URL and saves to Variable
-		WebSock.close()                                     # Closes connection to url
+		try:
+			WebSock = urllib.request.urlopen(Base_URL)          # Opens a 'Socket' to URL
+			WebHTML = WebSock.read().decode('utf-8', 'ignore')  # Reads Contents of URL and saves to Variable
+			WebSock.close()                                     # Closes connection to url
+		except HTTPError as httpError:
+			print("[LFM PLG(PM)] HTTP Error %d: %s" % (httpError.code, httpError.reason))
+			xbmc.executebuiltin("Notification(" + self.SCRIPT_NAME+",Last.fm request error - is API key configured?)")
+			return ""
+		except URLError as urlError:
+			print("[LFM PLG(PM)] URL Error %s" % (urlError.reason))
+			return ""
+		
 		searchTracks = re.findall("<track>.*?<name>(.+?)</name>.*?<artist>(.+?)</artist>.*?<listeners>(.+?)</listeners>.*?</track>", WebHTML, re.DOTALL )		
 		foundTracks = []
 		
@@ -136,9 +149,18 @@ class MyPlayer( xbmc.Player ) :
 		# The url in which to use
 		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.parse.quote_plus(self.unicode_normalize_string(currentlyPlayingArtist))
 		print("[LFM PLG(PM)] Request : " + Base_URL)
-		WebSock = urllib.request.urlopen(Base_URL)          # Opens a 'Socket' to URL
-		WebHTML = WebSock.read().decode('utf-8', 'ignore')  # Reads Contents of URL and saves to Variable
-		WebSock.close()                                     # Closes connection to url
+		try:
+			WebSock = urllib.request.urlopen(Base_URL)          # Opens a 'Socket' to URL
+			WebHTML = WebSock.read().decode('utf-8', 'ignore')  # Reads Contents of URL and saves to Variable
+			WebSock.close()                                     # Closes connection to url
+		except HTTPError as httpError:
+			print("[LFM PLG(PM)] HTTP Error %d: %s" % (httpError.code, httpError.reason))
+			xbmc.executebuiltin("Notification(" + self.SCRIPT_NAME+",Last.fm request error - is API key configured?)")
+			return ""
+		except URLError as urlError:
+			print("[LFM PLG(PM)] URL Error %s" % (urlError.reason))
+			return ""
+		
 		similarArtists = re.findall("<artist>.*?<name>(.+?)</name>.*?<mbid>(.+?)</mbid>.*?<match>(.+?)</match>.*?</artist>", WebHTML, re.DOTALL )
 		similarArtists = [x for x in similarArtists if float(x[2]) > (float(self.minimalmatching)/100.0)]			
 		return similarArtists
@@ -156,9 +178,18 @@ class MyPlayer( xbmc.Player ) :
 		# The url in which to use
 		Base_URL = self.apiPath + apiMethod + "&mbid=" + urllib.parse.quote_plus(mbIdArtist)
 		print("[LFM PLG(PM)] Request : " + Base_URL)
-		WebSock = urllib.request.urlopen(Base_URL)           # Opens a 'Socket' to URL
-		WebHTML2 = WebSock.read().decode('utf-8', 'ignore')  # Reads Contents of URL and saves to Variable
-		WebSock.close()                                      # Closes connection to url
+		try:
+			WebSock = urllib.request.urlopen(Base_URL)           # Opens a 'Socket' to URL
+			WebHTML2 = WebSock.read().decode('utf-8', 'ignore')  # Reads Contents of URL and saves to Variable
+			WebSock.close()                                      # Closes connection to url
+		except HTTPError as httpError:
+			print("[LFM PLG(PM)] HTTP Error %d: %s" % (httpError.code, httpError.reason))
+			xbmc.executebuiltin("Notification(" + self.SCRIPT_NAME+",Last.fm request error - is API key configured?)")
+			return ""
+		except URLError as urlError:
+			print("[LFM PLG(PM)] URL Error %s" % (urlError.reason))
+			return ""
+		
 		topTracks = re.findall("<track rank=.+?>.*?<name>(.+?)</name>.*?<playcount>(.+?)</playcount>.*?<listeners>(.+?)</listeners>.*?<artist>.*?<name>(.+?)</name>.*?</artist>.*?</track>", WebHTML2, re.DOTALL )
 		print("[LFM PLG(PM)] Count: " + str(len(topTracks)))
 		topTracks = [x for x in topTracks if int(x[1]) > self.minimalplaycount]		
@@ -170,10 +201,18 @@ class MyPlayer( xbmc.Player ) :
 		# The url in which to use
 		Base_URL = self.apiPath + apiMethod + "&artist=" + urllib.parse.quote_plus(self.unicode_normalize_string(currentlyPlayingArtist)) + "&track=" + urllib.parse.quote_plus(self.unicode_normalize_string(currentlyPlayingTitle))
 		print("[LFM PLG(PM)] Request : " + Base_URL)
-		WebSock = urllib.request.urlopen(Base_URL)          # Opens a 'Socket' to URL
-		WebHTML = WebSock.read().decode('utf-8', 'ignore')  # Reads Contents of URL and saves to Variable
-		WebSock.close()                                     # Closes connection to url
-
+		try:
+			WebSock = urllib.request.urlopen(Base_URL)          # Opens a 'Socket' to URL
+			WebHTML = WebSock.read().decode('utf-8', 'ignore')  # Reads Contents of URL and saves to Variable
+			WebSock.close()                                     # Closes connection to url
+		except HTTPError as httpError:
+			print("[LFM PLG(PM)] HTTP Error %d: %s" % (httpError.code, httpError.reason))
+			xbmc.executebuiltin("Notification(" + self.SCRIPT_NAME+",Last.fm request error - is API key configured?)")
+			return ""
+		except URLError as urlError:
+			print("[LFM PLG(PM)] URL Error %s" % (urlError.reason))
+			return ""
+		
 		similarTracks = re.findall("<track>.*?<name>(.+?)</name>.*?<playcount>(.+?)</playcount>.*?<match>(.+?)</match>.*?<artist>.*?<name>(.+?)</name>.*?</artist>.*?</track>", WebHTML, re.DOTALL )
 		similarTracks = [x for x in similarTracks if int(x[1]) > self.minimalplaycount]	
 		similarTracks = [x for x in similarTracks if float(x[2]) > (float(self.minimalmatching)/100.0)]			

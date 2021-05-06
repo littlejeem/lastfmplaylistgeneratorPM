@@ -47,3 +47,7 @@ msgstr ""
 msgctxt "#32007"
 msgid "Search mode"
 msgstr ""
+
+msgctxt "#32008"
+msgid "Last.fm API key"
+msgstr ""

@@ -9,5 +9,6 @@
 		<setting id="minimalplaycount" type="enum" values="50|100|250|500" label="32005" default="1"/>
 		<setting id="minimalmatching" type="enum" values="1|2|5|10|20" label="32006" default="1"/>
 		<setting id="mode" type="enum" values="Similar tracks|Top tracks of similar artist|Custom" label="32007" default="2"/>
+		<setting id="lastfmapikey" type="text" label="32008" default="" />
 	</category>
 </settings>
