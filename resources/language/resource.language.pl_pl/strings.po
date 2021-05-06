@@ -1,0 +1,37 @@
+# Kodi Media Center language file
+# Addon Name: Last.fm playlist generator
+# Addon id: script.lastfmplaylistgeneratorPM
+# Addon Provider: KikiGonzales
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC Addons\n"
+"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: none\n"
+"Language-Team: none\n"
+"Language: en_gb\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgctxt "#32000"
+msgid "Zezwalaj na odtwarzanie tego samego utworu więcej niż raz"
+msgstr ""
+
+msgctxt "#32001"
+msgid "Preferuj różnych artystów"
+msgstr ""
+
+msgctxt "#32002"
+msgid "Preferowana liczba utworów do dodania"
+msgstr ""
+
+msgctxt "#32003"
+msgid "Przerwa w sekundach między wyszukaniami"
+msgstr ""
+
+msgctxt "#32004"
+msgid "Ogranicz wyniki Last.fm (mniejsza liczba dla lepszego podobieństwa)"
+msgstr ""

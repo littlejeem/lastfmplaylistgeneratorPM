@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-    <category label="Settings">
-		<setting id='allowtrackrepeat' type ="bool" label="33000" default="0"/>
-		<setting id='preferdifferentartist' type ="bool" label="33001" default="0"/>
-		<setting id="numberoftrackstoadd" type="enum" values="1|3|5|10" label="33002" default="1"/>
-		<setting id="delaybeforesearching" type="enum" values="2|10|30" label="33003" default="0"/>
-		<setting id="limitlastfmresult" type="enum" values="50|100|250" label="33004" default="2"/>
-		<setting id="minimalplaycount" type="enum" values="50|100|250|500" label="33005" default="1"/>
-		<setting id="minimalmatching" type="enum" values="1|2|5|10|20" label="33006" default="1"/>
-		<setting id="mode" type="enum" values="Similar tracks|Top tracks of similar artist|Custom" label="33007" default="2"/>
+	<category label="Settings">
+		<setting id='allowtrackrepeat' type ="bool" label="32000" default="0"/>
+		<setting id='preferdifferentartist' type ="bool" label="32001" default="0"/>
+		<setting id="numberoftrackstoadd" type="enum" values="1|3|5|10" label="32002" default="1"/>
+		<setting id="delaybeforesearching" type="enum" values="2|10|30" label="32003" default="0"/>
+		<setting id="limitlastfmresult" type="enum" values="50|100|250" label="32004" default="2"/>
+		<setting id="minimalplaycount" type="enum" values="50|100|250|500" label="32005" default="1"/>
+		<setting id="minimalmatching" type="enum" values="1|2|5|10|20" label="32006" default="1"/>
+		<setting id="mode" type="enum" values="Similar tracks|Top tracks of similar artist|Custom" label="32007" default="2"/>
 	</category>
 </settings>
