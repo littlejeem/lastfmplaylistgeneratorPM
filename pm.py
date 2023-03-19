@@ -9,9 +9,10 @@ import difflib
 import http.client, urllib.parse, urllib.request
 import sys, time
 import threading, _thread
-import xbmc, xbmcgui, xbmcaddon
+import xbmc, xbmcvfs, xbmcgui, xbmcaddon
 import unicodedata
 import re
+import xbmcvfs
 from os.path import exists
 from os import remove
 from urllib.error import HTTPError, URLError
@@ -34,7 +35,7 @@ class MyPlayer( xbmc.Player ) :
 	dbtype = 'sqlite3'
 	timeStarted = time.time()
 	SCRIPT_NAME = "LAST.FM Playlist Generator"
-	
+
 	allowtrackrepeat =  __settings__.getSetting( "allowtrackrepeat" )
 	preferdifferentartist = __settings__.getSetting( "preferdifferentartist" )
 	numberoftrackstoadd = ( 1, 3, 5, 10, )[ int( __settings__.getSetting( "numberoftrackstoadd" ) ) ]
@@ -45,21 +46,21 @@ class MyPlayer( xbmc.Player ) :
 	mode= ( "Similar tracks", "Top tracks of similar artist", "Custom", )[ int(__settings__.getSetting( "mode" ) ) ]
 	apiKey = __settings__.getSetting( "lastfmapikey" )
 	timer = None
-	
+
 	#apiPath = "http://ws.audioscrobbler.com/2.0/?api_key=71e468a84c1f40d4991ddccc46e40f1b"
 	#apiPath = "http://ws.audioscrobbler.com/2.0/?api_key=3ae834eee073c460a250ee08979184ec"
 	apiPath = "http://ws.audioscrobbler.com/2.0/?api_key=2c0caa5a9d0f36fe8385f3d03986258b"
 	if (len(apiKey)):
 		apiPath = "http://ws.audioscrobbler.com/2.0/?api_key=" + apiKey
 	#print("[LFM PLG(PM)] apiPath: %s" % apiPath)
-	
+
 	def __init__ ( self ):
-		if not os.path.exists(xbmc.translatePath("special://userdata/advancedsettings.xml")):
+		if not os.path.exists(xbmcvfs.TranslatePath("special://userdata/advancedsettings.xml")):
 			self.dbtype = 'sqlite3'
 		else:
 			from xml.etree.ElementTree import ElementTree
 			advancedsettings = ElementTree()
-			advancedsettings.parse(xbmc.translatePath("special://userdata/advancedsettings.xml"))
+			advancedsettings.parse(xbmcvfs.TranslatePath("special://userdata/advancedsettings.xml"))
 			settings = advancedsettings.getroot().find("musicdatabase")
 			if settings is not None:
 				for setting in settings:
@@ -75,7 +76,7 @@ class MyPlayer( xbmc.Player ) :
 		removeauto('lastfmplaylistgeneratorpm')
 		addauto("if os.path.exists('" + os.path.normpath(process).replace('\\','\\\\') + "'):#lastfmplaylistgeneratorpm\n\tos.remove('" + os.path.normpath(process).replace('\\','\\\\') + "')","lastfmplaylistgeneratorpm")
 		xbmc.executebuiltin("Notification(" + self.SCRIPT_NAME+",Start by playing a song)")
-	
+
 	def startPlayBack(self):
 		print("[LFM PLG(PM)] onPlayBackStarted started")
 		if xbmc.Player().isPlayingAudio() == True:
@@ -103,13 +104,13 @@ class MyPlayer( xbmc.Player ) :
 		print("[LFM PLG(PM)] onPlayBackStarted waiting:  " + str(self.delaybeforesearching) +" seconds")
 		if (self.timer is not None and self.timer.is_alive()):
 			self.timer.cancel()
-			
+
 		self.timer = threading.Timer(self.delaybeforesearching,self.startPlayBack)
 		self.timer.start()
-	
+
 	def unicode_normalize_string(self, text):
 		return unicodedata.normalize('NFD', text).encode('ascii', 'ignore').decode('utf-8', 'ignore').upper().replace("-","")
-	
+
 	def fetch_searchTrack(self, currentlyPlayingTitle, currentlyPlayingArtist ):
 		apiMethod = "&method=track.search&limit=" + str(self.limitlastfmresult)
 
@@ -127,10 +128,10 @@ class MyPlayer( xbmc.Player ) :
 		except URLError as urlError:
 			print("[LFM PLG(PM)] URL Error %s" % (urlError.reason))
 			return ""
-		
-		searchTracks = re.findall("<track>.*?<name>(.+?)</name>.*?<artist>(.+?)</artist>.*?<listeners>(.+?)</listeners>.*?</track>", WebHTML, re.DOTALL )		
+
+		searchTracks = re.findall("<track>.*?<name>(.+?)</name>.*?<artist>(.+?)</artist>.*?<listeners>(.+?)</listeners>.*?</track>", WebHTML, re.DOTALL )
 		foundTracks = []
-		
+
 		for foundTrackName, foundArtistName, foundListeners in searchTracks :
 			if(foundListeners > self.minimalplaycount):
 				foundFullName = foundArtistName + " " + foundTrackName
@@ -140,7 +141,7 @@ class MyPlayer( xbmc.Player ) :
 				if(fullRatio > 0.5):
 					foundTracks.append([foundTrackName, foundArtistName])
 					print("[LFM PLG(PM)] Found Similar Track Name : " + foundTrackName + " by: " + foundArtistName)
-		
+
 		return foundTracks
 
 	def fetch_similarArtists( self, currentlyPlayingArtist ):
@@ -160,18 +161,18 @@ class MyPlayer( xbmc.Player ) :
 		except URLError as urlError:
 			print("[LFM PLG(PM)] URL Error %s" % (urlError.reason))
 			return ""
-		
+
 		similarArtists = re.findall("<artist>.*?<name>(.+?)</name>.*?<mbid>(.+?)</mbid>.*?<match>(.+?)</match>.*?</artist>", WebHTML, re.DOTALL )
-		similarArtists = [x for x in similarArtists if float(x[2]) > (float(self.minimalmatching)/100.0)]			
+		similarArtists = [x for x in similarArtists if float(x[2]) > (float(self.minimalmatching)/100.0)]
 		return similarArtists
-	
+
 	def find_Artist(self, artistName):
-		json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetArtists", "params": { "filter": {"field":"artist","operator":"is","value":"%s"} }, "id": 1}' % (artistName)) 
+		json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetArtists", "params": { "filter": {"field":"artist","operator":"is","value":"%s"} }, "id": 1}' % (artistName))
 		json_response = simplejson.loads(json_query)
 		if 'result' in json_response and json_response['result'] != None and 'artists' in json_response['result']:
 			return True
 		return False
-	
+
 	def fetch_topTracksOfArtist( self, mbIdArtist ):
 		apiMethod = "&method=artist.gettoptracks&limit=20"
 
@@ -189,12 +190,12 @@ class MyPlayer( xbmc.Player ) :
 		except URLError as urlError:
 			print("[LFM PLG(PM)] URL Error %s" % (urlError.reason))
 			return ""
-		
+
 		topTracks = re.findall("<track rank=.+?>.*?<name>(.+?)</name>.*?<playcount>(.+?)</playcount>.*?<listeners>(.+?)</listeners>.*?<artist>.*?<name>(.+?)</name>.*?</artist>.*?</track>", WebHTML2, re.DOTALL )
 		print("[LFM PLG(PM)] Count: " + str(len(topTracks)))
-		topTracks = [x for x in topTracks if int(x[1]) > self.minimalplaycount]		
-		return topTracks	
-		
+		topTracks = [x for x in topTracks if int(x[1]) > self.minimalplaycount]
+		return topTracks
+
 	def fetch_similarTracks( self, currentlyPlayingTitle, currentlyPlayingArtist ):
 		apiMethod = "&method=track.getsimilar&limit=" + str(self.limitlastfmresult)
 
@@ -212,25 +213,25 @@ class MyPlayer( xbmc.Player ) :
 		except URLError as urlError:
 			print("[LFM PLG(PM)] URL Error %s" % (urlError.reason))
 			return ""
-		
+
 		similarTracks = re.findall("<track>.*?<name>(.+?)</name>.*?<playcount>(.+?)</playcount>.*?<match>(.+?)</match>.*?<artist>.*?<name>(.+?)</name>.*?</artist>.*?</track>", WebHTML, re.DOTALL )
-		similarTracks = [x for x in similarTracks if int(x[1]) > self.minimalplaycount]	
-		similarTracks = [x for x in similarTracks if float(x[2]) > (float(self.minimalmatching)/100.0)]			
+		similarTracks = [x for x in similarTracks if int(x[1]) > self.minimalplaycount]
+		similarTracks = [x for x in similarTracks if float(x[2]) > (float(self.minimalmatching)/100.0)]
 		return similarTracks
-		
+
 	def main_similarTracks( self, currentlyPlayingTitle, currentlyPlayingArtist ):
 		countTracks = 0
 		similarTracks = []
 		if(self.mode == "Similar tracks" or self.mode == "Custom"):
 			similarTracks += self.fetch_similarTracks(currentlyPlayingTitle, currentlyPlayingArtist)
-			countTracks = len(similarTracks)			
+			countTracks = len(similarTracks)
 		if(self.mode == "Top tracks of similar artist" or (self.mode == "Custom" and countTracks < 10)):
 			similarArtists = self.fetch_similarArtists(currentlyPlayingArtist)
 			print("[LFM PLG(PM)] Nb Similar Artists : " + str(len(similarArtists)))
 			for similarArtistName, mbid, matchValue in similarArtists:
 				if self.find_Artist(similarArtistName):
 					similarTracks += self.fetch_topTracksOfArtist(mbid)
-				
+
 		foundArtists = []
 		countTracks = len(similarTracks)
 		print("[LFM PLG(PM)] Count: " + str(countTracks))
@@ -250,13 +251,13 @@ class MyPlayer( xbmc.Player ) :
 		for similarTrackName, playCount, matchValue, similarArtistName in similarTracks:
 			similarTrackName = similarTrackName.replace("+"," ").replace("("," ").replace(")"," ").replace("&quot","''").replace("&amp;","and")
 			similarArtistName = similarArtistName.replace("+"," ").replace("("," ").replace(")"," ").replace("&quot","''").replace("&amp;","and")
-			log("Looking for: " + similarTrackName + " - " + similarArtistName + " - " + matchValue + "/" + playCount)			
-			json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart", "year"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"is","value":"%s"},{"field":"artist","operator":"is","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
+			log("Looking for: " + similarTrackName + " - " + similarArtistName + " - " + matchValue + "/" + playCount)
+			json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart", "year"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"is","value":"%s"},{"field":"artist","operator":"is","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName))
 			json_response = simplejson.loads(json_query)
 			if 'result' not in json_response or json_response['result'] == None or 'songs' not in json_response['result']:
-				json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart", "year"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"contains","value":"%s"},{"field":"artist","operator":"contains","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName)) 
+				json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "AudioLibrary.GetSongs", "params": { "properties": ["title", "artist", "album", "file", "thumbnail", "duration", "fanart", "year"], "limits": {"end":1}, "sort": {"method":"random"}, "filter": { "and":[{"field":"title","operator":"contains","value":"%s"},{"field":"artist","operator":"contains","value":"%s"}] } }, "id": 1}' % (similarTrackName, similarArtistName))
 				json_response = simplejson.loads(json_query)
-				
+
 			# separate the records
 			if 'result' in json_response and json_response['result'] != None and 'songs' in json_response['result']:
 				count = 0
@@ -288,16 +289,16 @@ class MyPlayer( xbmc.Player ) :
 
 				if (self.countFoundTracks >= self.numberoftrackstoadd):
 					break
-			
+
 		if (self.countFoundTracks == 0):
 			time.sleep(3)
 			#self.firstRun = 1
 			log("[LFM PLG(PM)] None found")
 			xbmc.executebuiltin("Notification(" + self.SCRIPT_NAME+",No similar tracks were found)")
 			return False
-			
+
 		xbmc.executebuiltin('SetCurrentPlaylist(0)')
-		
+
 	def getListItem(self, trackTitle, artist, album, thumb, fanart, duration, year):
 		listitem = xbmcgui.ListItem(trackTitle)
 		if (fanart == ""):
@@ -309,7 +310,7 @@ class MyPlayer( xbmc.Player ) :
 		return listitem
 
 def addauto(newentry, scriptcode):
-	autoexecfile = xbmc.translatePath('special://home/userdata/autoexec.py')
+	autoexecfile = xbmcvfs.TranslatePath('special://home/userdata/autoexec.py')
 	#autoexecfile = "special://masterprofile/autoexec.py"
 	if exists(autoexecfile):
 		fh = open(autoexecfile)
@@ -337,7 +338,7 @@ def addauto(newentry, scriptcode):
 		f.close()
 
 def removeauto(scriptcode):
-	autoexecfile = xbmc.translatePath('special://home/userdata/autoexec.py')
+	autoexecfile = xbmcvfs.TranslatePath('special://home/userdata/autoexec.py')
 	#autoexecfile = "special://masterprofile/autoexec.py"
 	if exists(autoexecfile):
 		fh = open(autoexecfile)
@@ -346,7 +347,7 @@ def removeauto(scriptcode):
 		f = open(autoexecfile, "w")
 		f.writelines(lines)
 		f.close()
-		
+
 BASE_RESOURCE_PATH = os.path.join( __cwd__, "resources" )
 
 process = os.path.join( BASE_RESOURCE_PATH , "pm.pid")
