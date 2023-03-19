@@ -1,3 +1,21 @@
+1.5.0
+- initial testing of fix suggested by @spicydanm13 on kodi forum to get working for kodi 20
+- Replace all xbmc.TranslatePath to xbmcvfs.translatePath
+- added xbmcvfs to import section
+
+1.4.0
+- Work by @chriswalken to update scrip for Python 3 and compatibility with kodi 19
+- expected python adjustments for python3, hopefully I got the unicode right
+- elementtree is now built in to kodi
+- make it require python3
+- bumped simplejson to 2.1.1 only because it's the first to mention python3 in the release notes
+- I couldn't get XBMC.RunScript() to launch pm.py but xbmc.executescript() did
+- setThumbnailImage() removed from kodi
+- Use xbmc.Monitor() to monitor for exit, xbmc.abortRequested() was removed
+
+1.3.0
+- fix to lastfm api?
+
 1.2.0
 - Changed : Optimise song selection
 - Added : 2 properties (minimalmatch, minimalplaycount)
@@ -10,7 +28,7 @@
 - Fixed: Removed unnecessary dependency check
 
 1.1.3
-- Fixed: Stopped after first run. 
+- Fixed: Stopped after first run.
 
 1.1.2
 - Changed: Move plugin to Music's addon section
@@ -50,7 +68,7 @@
 	Prefer different artist
 	Number of tracks to add
 	Dealy before searching
-	
+
 1.0.4
 - Added: Add artist fanart to the listitem
 - Changed: Randomize last.fm result
