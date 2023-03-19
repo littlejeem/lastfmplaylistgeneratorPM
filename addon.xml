@@ -3,9 +3,6 @@
        name="Last.FM Playlist Generator (Partymode)"
        version="1.6.0"
        provider-name="KikiGonzales">
-  <assets>
-   <icon>resources/icon.png</icon>
-  </assets>
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
     <import addon="script.module.simplejson" version="2.1.1"/>
@@ -13,7 +10,7 @@
   <extension point="xbmc.python.script"
              library="default.py">
     <provides>audio</provides>
-  </extension>
+  </extension> 
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <minversion>1</minversion>
