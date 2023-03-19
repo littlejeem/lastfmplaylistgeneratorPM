@@ -9,7 +9,7 @@ import difflib
 import http.client, urllib.parse, urllib.request
 import sys, time
 import threading, _thread
-import xbmc, xbmcgui, xbmcaddon
+import xbmc, xbmcvfs, xbmcgui, xbmcaddon
 import unicodedata
 import re
 from os.path import exists
