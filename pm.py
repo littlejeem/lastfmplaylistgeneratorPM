@@ -12,6 +12,7 @@ import threading, _thread
 import xbmc, xbmcvfs, xbmcgui, xbmcaddon
 import unicodedata
 import re
+import xbmcvfs
 from os.path import exists
 from os import remove
 from urllib.error import HTTPError, URLError
